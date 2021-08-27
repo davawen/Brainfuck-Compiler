@@ -6,7 +6,7 @@ int main(int argc, char *argv[])
 {
 	if(argc <= 1)
 	{
-		printf("Error: no file specified.");
+		printf("Error: no file specified.\n");
 		exit(-1);
 	}
 	
@@ -48,8 +48,6 @@ int main(int argc, char *argv[])
 				*ptr = getchar();
 				break;
 			case '[':
-				// lastBracket = ftell(fp);
-				
 				if(*ptr != 0) continue;
 				
 				while((chr = fgetc(fp)) != EOF)
@@ -83,14 +81,6 @@ int main(int argc, char *argv[])
 						else layer--;
 					}
 				}
-				
-				// if(lastBracket == -1)
-				// {
-				// }
-				// else
-				// {
-				// 	fseek(fp, lastBracket, SEEK_SET);
-				// }
 				break;
 			default:
 				break;
