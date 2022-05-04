@@ -78,9 +78,6 @@ int main(int argc, char **argv) {
 	out("global _start\n");
 	out("section .text\n\n");
 
-#define M_PUTC 
-
-
 	out("_start:\n\n");
 
 	// Initialize memory to zero
