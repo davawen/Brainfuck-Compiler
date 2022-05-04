@@ -1,1 +1,5 @@
-
+*
+!Makefile
+!compiler.c
+!interpret.c
+!*.bf
