@@ -1,4 +1,5 @@
 ,                    Read into c0
+------------------------------- Bring into printable ASCII range
 >+>+                 c1 = 1; c2 = 1
 <<                   Move back to c0
 [                    Main loop start
@@ -13,4 +14,5 @@
   <<<<               Move to c0
 ]                    End main loop; jump back if c0 != 0
 >>                   Result is in c2
+++++++++++++++++++++++++++++++++ Bring into printable ASCII range
 .                    Print it

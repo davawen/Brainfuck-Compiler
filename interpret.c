@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <sys/time.h>
+#include <string.h>
 
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #define min(a, b) ((a) < (b) ? (a) : (b))
@@ -29,6 +30,13 @@ void draw_memory(WINDOW *local_win, int *memory, int *ptr, int w)
 	if(offset * 5 + 3 < w) mvwaddch(local_win, 2, offset * 5 + 3, '^');
 	
 	box(local_win, 0, 0);
+}
+
+bool is_default(char chr)
+{
+	const char *chars = "><+-.,[]";
+
+	return strchr(chars, chr) == NULL;
 }
 
 int main(int argc, char *argv[])
@@ -148,121 +156,125 @@ int main(int argc, char *argv[])
 	char chr;
 	while((chr = fgetc(fp)) != EOF)
 	{
-		draw_memory(memory_win, memory, ptr, 80);
-		
-		wchgat(output_win, 1, A_REVERSE, 0, NULL);
-		
-		mvwchgat(file_win, lineOffset, offset, 1, A_REVERSE, 0, NULL);
-		
-		wrefresh(memory_win);
-		wrefresh(file_win);
-		wrefresh(output_win);
-		refresh();
-		
-		long long start = get_time();
-		
-		while(get_time() - start < speed || paused)
+		if(!is_default(chr))
 		{
-			int ch = getch();
-			
-			if(ch == 'q') goto end;
-			else if(ch == 'k') fullspeed = !fullspeed;
-			else if(ch == ' ') paused = !paused;
-			else if(ch == KEY_RIGHT) speed /= 1.5;
-			else if(ch == KEY_LEFT) speed *= 1.5;
-			
-			if(fullspeed && (get_time() - start < 5)) break;
-		}
-		
-		mvwchgat(file_win, lineOffset, offset, 1, A_NORMAL, 0, NULL);
-		
-		switch(chr)
-		{
-			case '>':
-				ptr++;
-				break;
-			case '<':
-				ptr--;
-				break;
-			case '+':
-				(*ptr)++;
-				break;
-			case '-':
-				(*ptr)--;
-				break;
-			case '.':
-				waddch(output_win, *ptr);
-				break;
-			case ',':
-				*ptr = wgetch(output_win);
-				break;
-			case '[':
-				if(*ptr != 0) break;
-				
-				while((chr = fgetc(fp)) != EOF)
-				{
-					if(chr == '[') layer++;
-					else if(chr == ']')
+			draw_memory(memory_win, memory, ptr, 80);
+
+			wchgat(output_win, 1, A_REVERSE, 0, NULL);
+
+			mvwchgat(file_win, lineOffset, offset, 1, A_REVERSE, 0, NULL);
+
+			wrefresh(memory_win);
+			wrefresh(file_win);
+			wrefresh(output_win);
+			refresh();
+
+			long long start = get_time();
+
+			while(get_time() - start < speed || paused)
+			{
+				int ch = getch();
+
+				if(ch == 'q') goto end;
+				else if(ch == 'k') fullspeed = !fullspeed;
+				else if(ch == ' ') paused = !paused;
+				else if(ch == KEY_RIGHT) speed /= 1.5;
+				else if(ch == KEY_LEFT) speed *= 1.5;
+
+				if(fullspeed && (get_time() - start < 5)) break;
+			}
+
+			mvwchgat(file_win, lineOffset, offset, 1, A_NORMAL, 0, NULL);
+
+			bool wasDefault = false;
+			switch(chr)
+			{
+				case '>':
+					ptr++;
+					break;
+				case '<':
+					ptr--;
+					break;
+				case '+':
+					(*ptr)++;
+					break;
+				case '-':
+					(*ptr)--;
+					break;
+				case '.':
+					waddch(output_win, *ptr);
+					break;
+				case ',':
+					*ptr = wgetch(output_win);
+					break;
+				case '[':
+					if(*ptr != 0) break;
+
+					while((chr = fgetc(fp)) != EOF)
 					{
-						if(layer == 0) break;
-						else layer--;
+						if(chr == '[') layer++;
+						else if(chr == ']')
+						{
+							if(layer == 0) break;
+							else layer--;
+						}
+
+						offset++;
+
+						if(offset >= fileWidth)
+						{
+							lineOffset++;
+							offset = 5;
+						}
+
+						if(chr == '\n')
+						{
+							lineOffset++;
+
+							offset = 5;
+						}
 					}
-					
-					offset++;
-		
-					if(offset >= fileWidth)
+					break;
+				case ']':
+					if(*ptr == 0) break;
+
+					for(;;)
 					{
-						lineOffset++;
-						offset = 5;
+						fseek(fp, -2L, SEEK_CUR);
+						if(ftell(fp) < 0)
+						{
+							printf("Error: no opening bracket specified");
+							exit(-1);
+						}
+
+						chr = fgetc(fp);
+
+						offset--;
+
+						if(chr == ']') layer++;
+						else if(chr == '[')
+						{
+							if(layer == 0) break;
+							else layer--;
+						}
+
+						if(offset <= 0)
+						{
+							lineOffset--;
+							offset = endOffset[lineOffset];
+						}
+
+						if(chr == '\n')
+						{
+							lineOffset--;
+
+							offset = endOffset[lineOffset];
+						}
 					}
-					
-					if(chr == '\n')
-					{
-						lineOffset++;
-						
-						offset = 5;
-					}
-				}
-				break;
-			case ']':
-				if(*ptr == 0) break;
-				
-				for(;;)
-				{
-					fseek(fp, -2L, SEEK_CUR);
-					if(ftell(fp) < 0)
-					{
-						printf("Error: no opening bracket specified");
-						exit(-1);
-					}
-					
-					chr = fgetc(fp);
-					
-					offset--;
-		
-					if(chr == ']') layer++;
-					else if(chr == '[')
-					{
-						if(layer == 0) break;
-						else layer--;
-					}
-					
-					if(offset <= 0)
-					{
-						lineOffset--;
-						offset = endOffset[lineOffset];
-					}
-					
-					if(chr == '\n')
-					{
-						lineOffset--;
-						
-						offset = endOffset[lineOffset];
-					}
-				}
-				break;
-			default:
-				break;
+					break;
+				default:
+					break;
+			}
 		}
 		
 		offset++;

@@ -1,6 +1,9 @@
 CC=gcc
-EXEC=bf_interpret
 
+all: interpreter compiler
 
-all:
-	${CC} -o ${EXEC} main.c -lncurses
+interpreter: interpreter.c
+	${CC} -o interpret interpret.c -lncurses
+
+compiler: compiler.c
+	${CC} -o compiler compiler.c
